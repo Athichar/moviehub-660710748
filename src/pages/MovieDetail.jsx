@@ -1,16 +1,48 @@
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReviewForm from '../components/ReviewForm';
-import { movies } from '../data/data';
-// TODO ขั้นที่ 4: import { useEffect, useState } from 'react';
-// TODO ขั้นที่ 4: import { getMovie } from '../api/tmdb';
+import ReviewList from '../components/ReviewList';
+import MovieActions from '../components/MovieActions';
+import { getMovie } from '../api/tmdb';
+import { useAuth } from '../auth/AuthContext';
+// TODO ขั้นที่ 3: import { getReviews, postReview } from '../api/backend';
 
 function MovieDetail() {
-  const { id } = useParams();                       // ได้เป็น string เสมอ
+  const { id } = useParams();                       // ได้เป็น string เสมอ (ตอนนี้คือรหัสของ TMDB)
+  const [movie, setMovie] = useState(null);
+  const [status, setStatus] = useState('loading');
+  const [error, setError] = useState(null);
+  const [reviews, setReviews] = useState([]);       // รีวิวจาก backend ของเรา (ไม่ใช่ TMDB)
+  const { isLoggedIn } = useAuth();                 // TODO ขั้นที่ 3: ดึง token และ member มาด้วย
 
-  // TODO ขั้นที่ 4: เปลี่ยนเป็น state 3 ตัว (movie, status, error) แล้วโหลดด้วย getMovie(id) ใน useEffect
-  const movie = movies.find(m => m.id === Number(id));
-  const status = movie ? 'success' : 'error';
-  const error = movie ? null : new Error('ไม่มีเรื่องนี้ใน data.js');
+  useEffect(() => {
+    let ignore = false;
+    async function load() {
+      setStatus('loading');
+      try {
+        const m = await getMovie(id);
+        if (!ignore) { setMovie(m); setStatus('success'); }
+      } catch (err) {
+        if (!ignore) { setError(err); setStatus('error'); }
+      }
+    }
+    load();
+    return () => { ignore = true; };
+  }, [id]);                                          // id เปลี่ยน = โหลดเรื่องใหม่
+
+  // TODO ขั้นที่ 3 (ก): เปลี่ยน effect นี้ให้โหลดรีวิวจริงจาก backend
+  //   getReviews(id) ได้ { items } แล้ว setReviews(items)  dependency คือ [id] เหมือนตัวบน
+  //   (แยกจาก effect ของ TMDB เพราะคนละ server พังคนละแบบ ไม่ควรให้รีวิวล่มแล้วหน้าทั้งหน้าพัง)
+  useEffect(() => {
+    setReviews([]);                                // ชั่วคราว: ยังไม่มีรีวิว
+  }, [id]);
+
+  // TODO ขั้นที่ 3 (ข): ส่งรีวิวจริง
+  async function handleReviewSubmit(text) {
+    //   const saved = await postReview(id, text, token);
+    //   แล้วเติมรีวิวใหม่เข้าไปหน้าสุดของ reviews ด้วย spread (ไม่ push) ใช้ชื่อจาก member ใน useAuth()
+    throw new Error('ยังไม่ได้ต่อ API ส่งรีวิว (ขั้นที่ 3)');
+  }
 
   if (status === 'loading') {
     return (
@@ -57,8 +89,21 @@ function MovieDetail() {
           </p>
           <p className="mt-4 leading-relaxed text-slate-700">{movie.detail}</p>
 
-          <div className="mt-8 rounded-xl border border-emerald-100 bg-white p-5">
-            <ReviewForm key={movie.id} movieTitle={movie.title} />
+          <MovieActions movieId={movie.id} />
+
+          <div className="mt-8">
+            <h2 className="mb-3 text-lg font-semibold text-slate-900">รีวิวจากสมาชิก ({reviews.length})</h2>
+            <ReviewList items={reviews} />
+          </div>
+
+          <div className="mt-6 rounded-xl border border-emerald-100 bg-white p-5">
+            {isLoggedIn ? (
+              <ReviewForm key={movie.id} movieTitle={movie.title} onSubmit={handleReviewSubmit} />
+            ) : (
+              <p className="text-sm text-slate-500">
+                <Link to="/login" className="text-emerald-600 hover:underline">เข้าสู่ระบบ</Link> เพื่อเขียนรีวิว
+              </p>
+            )}
           </div>
         </div>
       </div>

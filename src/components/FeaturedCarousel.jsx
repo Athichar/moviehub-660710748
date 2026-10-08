@@ -1,37 +1,18 @@
-import { useState } from 'react';
-import MovieCard from './MovieCard';
+// แถบเตือนเมื่อยังไม่ได้ตั้งค่า API key จะหายไปเองเมื่อ .env ถูกต้องและรัน npm start ใหม่
+function KeyBanner() {
+  const key = process.env.REACT_APP_TMDB_KEY;
+  const looksValid = /^[a-f0-9]{32}$/i.test(key || '');   // API Key v3 ของ TMDB ยาว 32 ตัว เป็นเลขฐานสิบหก
+  if (looksValid) return null;
 
-const PER_PAGE = 4;
-
-// แถบหนังแนะนำแบบเลื่อนซ้ายขวา รับ movies ที่สลับลำดับมาแล้วจากแม่ ตัวเองจำแค่ว่าอยู่ชุดที่เท่าไร
-function FeaturedCarousel({ movies }) {
-  const [page, setPage] = useState(0);
-  const total = Math.ceil(movies.length / PER_PAGE);   // จำนวนชุด เช่น 10 เรื่อง = 3 ชุด
-
-  if (movies.length === 0) {
-    return <p className="py-10 text-center text-slate-400">ยังไม่มีหนังแนะนำ</p>;
-  }
-
-  const shown = movies.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE);
-  const prev = () => setPage(p => (p - 1 + total) % total);   // ถอยจากชุดแรกวนไปชุดสุดท้าย
-  const next = () => setPage(p => (p + 1) % total);           // เดินจากชุดสุดท้ายวนกลับชุดแรก
+  const message = !key
+    ? <>ยังไม่พบ <code>REACT_APP_TMDB_KEY</code> เปิดไฟล์ <code>.env</code> (คัดลอกจาก .env.example) แล้วใส่ key</>
+    : <>ค่าใน <code>REACT_APP_TMDB_KEY</code> ไม่เหมือน API Key v3 (ต้องยาว 32 ตัว ไม่ใช่ token ยาวที่ขึ้นต้นด้วย eyJ)</>;
 
   return (
-    <div>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {shown.map(m => <MovieCard key={m.id} movie={m} />)}
-      </div>
-      <div className="mt-4 flex items-center justify-center gap-4 text-sm text-slate-500">
-        <button onClick={prev} className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-emerald-700 hover:bg-emerald-50">
-          ก่อนหน้า
-        </button>
-        <span>ชุดที่ {page + 1} จาก {total}</span>
-        <button onClick={next} className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-emerald-700 hover:bg-emerald-50">
-          ถัดไป
-        </button>
-      </div>
+    <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-800">
+      🔑 {message} แล้วหยุดและรัน <code>npm start</code> ใหม่
     </div>
   );
 }
 
-export default FeaturedCarousel;
+export default KeyBanner;
